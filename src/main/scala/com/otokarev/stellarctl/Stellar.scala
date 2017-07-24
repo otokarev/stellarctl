@@ -5,6 +5,13 @@ import org.stellar.sdk._
 import org.stellar.sdk.requests.RequestBuilder.{Order => SdkOrder}
 import org.stellar.sdk.responses.{AccountResponse, OfferResponse, Page, SubmitTransactionResponse}
 
+object Stellar {
+  case class GenerateKeyPairResult(
+                                    account: String,
+                                    accountSecret: String
+                                  )
+}
+
 class Stellar()(implicit context: Context) {
   private val server = new Server(context.horizonUrl)
 
@@ -104,6 +111,7 @@ class Stellar()(implicit context: Context) {
   object TransactionAdapter {
     import OperationAdapter.Builder
 
+
     def process[T: Builder](
                              accountSecret: String,
                              operations: List[T],
@@ -138,6 +146,11 @@ class Stellar()(implicit context: Context) {
     type Order = Value
     val desc = Value("desc")
     val asc = Value("asc")
+  }
+
+  def generateKeyPair(): Stellar.GenerateKeyPairResult = {
+    val pair: KeyPair = KeyPair.random()
+    Stellar.GenerateKeyPairResult(account = pair.getAccountId, accountSecret = pair.getSecretSeed.mkString(""))
   }
 
   def createTestAccount(account: String): String = {

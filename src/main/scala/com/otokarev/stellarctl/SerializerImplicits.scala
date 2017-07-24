@@ -1,4 +1,5 @@
 package com.otokarev.stellarctl
+import com.otokarev.stellarctl.Stellar._
 
 import org.stellar.sdk._
 import org.stellar.sdk.responses.{AccountResponse, OfferResponse, Page, SubmitTransactionResponse}
@@ -23,6 +24,16 @@ object SerializerImplicits {
     },
   ))
 
+  class GenerateKeyPairResultSerializer extends CustomSerializer[Stellar.GenerateKeyPairResult](format => (
+    {
+      // We do not need deserialization so put here something for scala to compile
+      case _ => null.asInstanceOf[Stellar.GenerateKeyPairResult]
+    },
+    {
+      case result: Stellar.GenerateKeyPairResult => JObject(JField("account", JString(result.account)) :: JField("accountSecret", JString(result.accountSecret)) :: Nil)
+    },
+  ))
+
   class AccountResponseSerializer extends CustomSerializer[AccountResponse](format => (
     {
       // We do not need deserialization so put here something for scala to compile
@@ -42,7 +53,7 @@ object SerializerImplicits {
     }
   ))
 
-  implicit val formats = DefaultFormats + new AssetSerializer + new AccountResponseSerializer + new PageOfferResponseSerializer + new SubmitTransactionResponseSerializer
+  implicit val formats: Formats = DefaultFormats + new AssetSerializer + new AccountResponseSerializer + new PageOfferResponseSerializer + new SubmitTransactionResponseSerializer + new GenerateKeyPairResultSerializer
 
   class PageOfferResponseSerializer extends CustomSerializer[Page[OfferResponse]](format => (
     {

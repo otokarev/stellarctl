@@ -28,6 +28,10 @@ class StellarSpec extends FlatSpec with Matchers {
     ))))
   }
 
+  it should "Generate Key Pair" in {
+    println(prettyRender(decompose(stellar.generateKeyPair())))
+  }
+
   it should "Create test account" in {
     println(stellar.createTestAccount(account1))
   }

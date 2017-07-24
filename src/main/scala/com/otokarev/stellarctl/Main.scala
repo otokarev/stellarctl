@@ -91,6 +91,10 @@ object Main {
           opt[String]("memo-type").abbr("mt")
             .action( (x, c) => c.copy(memoType = x) ).text("memo-type"),
         )
+
+      checkConfig {c =>
+        if (c.command.length == 0) failure("No command given") else success
+      }
     }
     parser.parse(args, Config()) match {
       case Some(config) =>

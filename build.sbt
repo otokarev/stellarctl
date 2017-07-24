@@ -9,4 +9,4 @@ lazy val root = (project in file("."))
       "org.scalatest" %% "scalatest" % "3.0.3" % Test,
       "org.scalaj" %% "scalaj-http" % "2.3.0"
     )
-  )
+  ).enablePlugins(JavaAppPackaging)

@@ -2,6 +2,7 @@ package com.otokarev.stellarctl
 
 import java.io.File
 
+import com.otokarev.stellarctl.Stellar._
 import com.typesafe.config.ConfigFactory
 
 object Main {
@@ -19,7 +20,17 @@ object Main {
                      amount: String = "0.0",
                      startingBalance: String = "0.0",
                      memo: String = "",
-                     memoType: String = ""
+                     memoType: String = "",
+                     sellingAssetType: String = "notNative",
+                     sellingAssetCode: String = "",
+                     sellingAssetIssuer: String = "",
+                     buyingAssetType: String = "notNative",
+                     buyingAssetCode: String = "",
+                     buyingAssetIssuer: String = "",
+                     price: String = "",
+                     cursor: String = "",
+                     order: String = "asc",
+                     pageSize: Int = 25,
   )
 
   def main(args: Array[String]) {
@@ -71,7 +82,15 @@ object Main {
           opt[String]("asset-issuer").abbr("ai")
             .action( (x, c) => c.copy(assetIssuer = x) ).text("asset issuer account ID"),
           opt[String]("limit").required().abbr("l")
-            .action( (x, c) => c.copy(limit = x) ).text("asset limit")
+            .action( (x, c) => c.copy(limit = x) ).text("asset limit"),
+          checkConfig(c => {
+            if (c.command != "add-asset-to-trustline")
+              success
+            else if (c.assetType != "native" && (c.assetIssuer.length == 0 || c.assetCode.length == 0))
+              failure("'--asset-type' must be 'native' or both '--asset-code' and '--asset-issuer' must be specified")
+            else
+              success
+          })
       )
 
       cmd("pay-to-account")
@@ -84,9 +103,9 @@ object Main {
             .action( (x, c) => c.copy(destinationAccount = x) ).text("destination account ID (public key)"),
           opt[String]("asset-type").abbr("at")
             .action( (x, c) => c.copy(assetType = x) ).text("asset type"),
-          opt[String]("asset-code").required().abbr("ac")
+          opt[String]("asset-code").abbr("ac")
             .action( (x, c) => c.copy(assetCode = x) ).text("asset code"),
-          opt[String]("asset-issuer").required().abbr("ai")
+          opt[String]("asset-issuer").abbr("ai")
             .action( (x, c) => c.copy(assetIssuer = x) ).text("asset issuer account ID"),
           opt[String]("amount").required().abbr("a")
             .action( (x, c) => c.copy(amount = x) ).text("amount"),
@@ -94,6 +113,62 @@ object Main {
             .action( (x, c) => c.copy(memo = x) ).text("memo"),
           opt[String]("memo-type").abbr("mt")
             .action( (x, c) => c.copy(memoType = x) ).text("memo-type"),
+          checkConfig(c => {
+            if (c.command != "pay-to-account")
+              success
+            else if (c.assetType != "native" && (c.assetIssuer.length == 0 || c.assetCode.length == 0))
+              failure("'--asset-type' must be 'native' or both '--asset-code' and '--asset-issuer' must be specified")
+            else
+              success
+          })
+        )
+
+      cmd("create-offer")
+        .action( (_, c) => c.copy(command = "create-offer") ).
+        text("Create an offer").
+        children(
+          opt[String]("account-secret").required().abbr("s")
+            .action( (x, c) => c.copy(accountSecret = x) ).text("source account secret (private key)"),
+          opt[String]("selling-asset-type").abbr("sat")
+            .action( (x, c) => c.copy(sellingAssetType = x) ).text("selling asset type"),
+          opt[String]("selling-asset-code").abbr("sac")
+            .action( (x, c) => c.copy(sellingAssetCode = x) ).text("selling asset code"),
+          opt[String]("selling-asset-issuer").abbr("sai")
+            .action( (x, c) => c.copy(sellingAssetIssuer = x) ).text("selling asset issuer account ID"),
+          opt[String]("buying-asset-type").abbr("bat")
+            .action( (x, c) => c.copy(buyingAssetType = x) ).text("buying asset type"),
+          opt[String]("buying-asset-code").abbr("bac")
+            .action( (x, c) => c.copy(buyingAssetCode = x) ).text("buying asset code"),
+          opt[String]("buying-asset-issuer").abbr("bai")
+            .action( (x, c) => c.copy(buyingAssetIssuer = x) ).text("buying asset issuer account ID"),
+          opt[String]("amount").required().abbr("a")
+            .action( (x, c) => c.copy(amount = x) ).text("amount of selling items"),
+          opt[String]("price").required().abbr("w")
+            .action( (x, c) => c.copy(price = x) ).text("price of a selling item"),
+          checkConfig(c => {
+            if (c.command != "create-offer")
+              success
+            else if (c.sellingAssetType != "native" && (c.sellingAssetIssuer.length == 0 || c.sellingAssetCode.length == 0))
+              failure("'--selling-asset-type' must be 'native' or both '--selling-asset-code' and '--selling-asset-issuer' must be specified")
+            else if (c.buyingAssetType != "native" && (c.buyingAssetIssuer.length == 0 || c.buyingAssetCode.length == 0))
+              failure("'--buying-asset-type' must be 'native' or both '--buying-asset-code' and '--buying-asset-issuer' must be specified")
+            else
+              success
+          })
+        )
+
+      cmd("get-offers")
+        .action( (_, c) => c.copy(command = "get-offers") ).
+        text("Get existing account's offers").
+        children(
+          opt[String]("account").required().abbr("p")
+            .action( (x, c) => c.copy(account = x) ).text("account ID (public key)"),
+          opt[String]("cursor").abbr("t")
+            .action( (x, c) => c.copy(cursor = x) ).text("cursor (paging token)"),
+          opt[Int]("limit").abbr("l")
+            .action( (x, c) => c.copy(pageSize = x) ).text("limit (page size)"),
+          opt[String]("order").abbr("o")
+            .action( (x, c) => c.copy(order = x) ).text("order (`asc` or `desc`)")
         )
 
       checkConfig {c =>
@@ -138,6 +213,25 @@ object Main {
               amount = config.amount,
               memo = if (config.memo.length > 0) Option(config.memo) else None,
               memoType = if (config.memoType.length > 0) Option(config.memoType) else None,
+            ))))
+          case "create-offer" =>
+            println(prettyRender(decompose(stellar.createOffer(
+              accountSecret = config.accountSecret,
+              sellingAssetType = if (config.sellingAssetType.length > 0) Option(config.sellingAssetType) else None,
+              sellingAssetCode = if (config.sellingAssetCode.length > 0) Option(config.sellingAssetCode) else None,
+              sellingAssetIssuer = if (config.sellingAssetIssuer.length > 0) Option(config.sellingAssetIssuer) else None,
+              buyingAssetType = if (config.buyingAssetType.length > 0) Option(config.buyingAssetType) else None,
+              buyingAssetCode = if (config.buyingAssetCode.length > 0) Option(config.buyingAssetCode) else None,
+              buyingAssetIssuer = if (config.buyingAssetIssuer.length > 0) Option(config.buyingAssetIssuer) else None,
+              price = config.price,
+              amount = config.amount
+            ))))
+          case "get-offers" =>
+            println(prettyRender(decompose(stellar.getOffers(
+              account = config.account,
+              cursor = if (config.cursor.length > 0) Option(config.cursor) else None,
+              limit = config.pageSize,
+              order = if (config.order == "desc") Stellar.Order.desc else Stellar.Order.asc
             ))))
         }
 

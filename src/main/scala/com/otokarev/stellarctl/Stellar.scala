@@ -1,5 +1,7 @@
 package com.otokarev.stellarctl
 
+import com.otokarev.stellarctl.Stellar.Order
+
 import scalaj.http._
 import org.stellar.sdk._
 import org.stellar.sdk.requests.RequestBuilder.{Order => SdkOrder}
@@ -10,6 +12,12 @@ object Stellar {
                                     account: String,
                                     accountSecret: String
                                   )
+
+  object Order extends Enumeration {
+    type Order = Value
+    val desc = Value("desc")
+    val asc = Value("asc")
+  }
 }
 
 class Stellar()(implicit context: Context) {
@@ -140,12 +148,6 @@ class Stellar()(implicit context: Context) {
 
       server.submitTransaction(transaction)
     }
-  }
-
-  object Order extends Enumeration {
-    type Order = Value
-    val desc = Value("desc")
-    val asc = Value("asc")
   }
 
   def generateKeyPair(): Stellar.GenerateKeyPairResult = {

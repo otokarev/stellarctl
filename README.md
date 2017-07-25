@@ -1,5 +1,25 @@
 Damn simple CLI application to communicate with [Stellar](https://www.stellar.org/) platform
 
+# Build
+## Debian
+```
+git clone git@github.com:otokarev/stellarctl.git
+cd stellarctl
+
+sbt debian:packageBin
+sudo apt install stellarctl/target/stellarctl_0.1.0-1_all.deb
+```
+
+## Universal
+```
+sbt universal:packageBin
+```
+now you got `target/universal/stellarctl-0.1.0-1.zip` that you can unpack and use
+```
+unzip stellarctl-0.1.0-1.zip
+./stellarctl-0.1.0-1/bin/stellarctl --help
+```
+
 # Usage
 ```
 # stellarctl --help

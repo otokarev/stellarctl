@@ -23,7 +23,11 @@ object Main {
   )
 
   def main(args: Array[String]) {
-    val parser = new scopt.OptionParser[Config]("scopt") {
+    val parser = new scopt.OptionParser[Config]("stellarctl") {
+      head("stellarctl", "0.1.0")
+
+      help("help").text("prints this usage text")
+
       opt[String]("config").abbr("c").action( (x, c) =>
         c.copy(config = x) ).text("configuration file")
 

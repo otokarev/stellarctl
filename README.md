@@ -1,27 +1,10 @@
 Damn simple CLI application to communicate with [Stellar](https://www.stellar.org/) platform
 
-# Build
-## Universal
-```
-git clone git@github.com:otokarev/stellarctl.git
-cd stellarctl
+# Install
 
-sbt universal:packageBin
-```
-now you got `target/universal/stellarctl-0.1.0-2.zip` that you can unpack and use
-```
-unzip stellarctl-0.1.0-2.zip
-./stellarctl-0.1.0-2/bin/stellarctl --help
-```
+Deb package: [stellarctl_0.1.0-2_all.deb](https://github.com/otokarev/stellarctl/releases/download/v0.1.0-2/stellarctl_0.1.0-2_all.deb)
 
-## Debian
-```
-git clone git@github.com:otokarev/stellarctl.git
-cd stellarctl
-
-sbt debian:packageBin
-sudo apt install stellarctl/target/stellarctl_0.1.0-2_all.deb
-```
+Universal package: [stellarctl-0.1.0-2.zip](https://github.com/otokarev/stellarctl/releases/download/v0.1.0-2/stellarctl-0.1.0-2.zip)
 
 # Usage
 ```
@@ -75,4 +58,27 @@ Send coins to account
   -mt, --memo-type <value>
                            memo-type
 
+```
+
+# Build
+## Universal
+```
+git clone git@github.com:otokarev/stellarctl.git
+cd stellarctl
+
+sbt universal:packageBin
+```
+now you got `target/universal/stellarctl-0.1.0-2.zip` that you can unpack and use
+```
+unzip stellarctl-0.1.0-2.zip
+./stellarctl-0.1.0-2/bin/stellarctl --help
+```
+
+## Debian
+```
+git clone git@github.com:otokarev/stellarctl.git
+cd stellarctl
+
+sbt debian:packageBin
+sudo apt install stellarctl/target/stellarctl_0.1.0-2_all.deb
 ```

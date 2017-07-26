@@ -2,7 +2,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "stellarctl",
     scalaVersion := "2.12.2",
-    version := "0.1.0-1",
+    version := "0.1.0-2",
     packageSummary := "Simple CLI utility to communicate with Stellar platform",
     maintainer := "Oleg Tokarev <otokarev@gmail.com>",
       libraryDependencies ++= Seq(

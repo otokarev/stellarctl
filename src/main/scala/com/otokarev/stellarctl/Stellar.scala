@@ -24,7 +24,7 @@ class Stellar()(implicit context: Context) {
   private val server = new Server(context.horizonUrl)
 
   case class ManageOfferStellarOperation(
-                                          id: Option[String] = None,
+                                          offerId: Option[String] = None,
                                           sellingAssetType: Option[String] = Some("notNative"),
                                           sellingAssetCode: Option[String] = None,
                                           sellingAssetIssuer: Option[String] = None,
@@ -103,7 +103,11 @@ class Stellar()(implicit context: Context) {
             case _ => Asset.createNonNativeAsset(operation.buyingAssetCode.get, KeyPair.fromAccountId(operation.buyingAssetIssuer.get))
           }
 
-          new ManageOfferOperation.Builder(sellingAssetOption.get, buyingAssetOption.get, operation.amount, operation.price).build()
+          val builder = new ManageOfferOperation.Builder(sellingAssetOption.get, buyingAssetOption.get, operation.amount, operation.price)
+
+          operation.offerId.foreach(id => builder.setOfferId(id.toLong))
+
+          builder.build()
         }
       }
 
@@ -188,8 +192,9 @@ class Stellar()(implicit context: Context) {
     builder.execute()
   }
 
-  def createOffer(
+  def manageOffer(
                    accountSecret: String,
+                   offerId: Option[String] = None,
                    sellingAssetType: Option[String] = Some("notNative"),
                    sellingAssetCode: Option[String] = None,
                    sellingAssetIssuer: Option[String] = None,
@@ -202,6 +207,7 @@ class Stellar()(implicit context: Context) {
     TransactionAdapter.process(
       accountSecret = accountSecret,
       operations = List(ManageOfferStellarOperation(
+        offerId = offerId,
         sellingAssetType = sellingAssetType,
         sellingAssetCode = sellingAssetCode,
         sellingAssetIssuer = sellingAssetIssuer,

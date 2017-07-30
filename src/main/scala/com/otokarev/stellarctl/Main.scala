@@ -31,6 +31,7 @@ object Main {
                      cursor: String = "",
                      order: String = "asc",
                      pageSize: Int = 25,
+                     offerId: String = "",
   )
 
   def main(args: Array[String]) {
@@ -123,9 +124,9 @@ object Main {
           })
         )
 
-      cmd("create-offer")
-        .action( (_, c) => c.copy(command = "create-offer") ).
-        text("Create an offer").
+      cmd("manage-offer")
+        .action( (_, c) => c.copy(command = "manage-offer") ).
+        text("Manage an offer.\nTo remove an order just specify --offer-id and set --amount to 0, in the case the parameters --(buying|selling)-asset-(code|type|issuer) and --price can have any valid values except that buying asset must differ selling asset.").
         children(
           opt[String]("account-secret").required().abbr("s")
             .action( (x, c) => c.copy(accountSecret = x) ).text("source account secret (private key)"),
@@ -145,8 +146,10 @@ object Main {
             .action( (x, c) => c.copy(amount = x) ).text("amount of selling items"),
           opt[String]("price").required().abbr("w")
             .action( (x, c) => c.copy(price = x) ).text("price of a selling item"),
+          opt[String]("offer-id").abbr("oi")
+            .action( (x, c) => c.copy(offerId = x) ).text("offer ID"),
           checkConfig(c => {
-            if (c.command != "create-offer")
+            if (c.command != "manage-offer")
               success
             else if (c.sellingAssetType != "native" && (c.sellingAssetIssuer.length == 0 || c.sellingAssetCode.length == 0))
               failure("'--selling-asset-type' must be 'native' or both '--selling-asset-code' and '--selling-asset-issuer' must be specified")
@@ -214,8 +217,9 @@ object Main {
               memo = if (config.memo.length > 0) Option(config.memo) else None,
               memoType = if (config.memoType.length > 0) Option(config.memoType) else None,
             ))))
-          case "create-offer" =>
-            println(prettyRender(decompose(stellar.createOffer(
+          case "manage-offer" =>
+            println(prettyRender(decompose(stellar.manageOffer(
+              offerId = if (config.offerId.length > 0) Option(config.offerId) else None,
               accountSecret = config.accountSecret,
               sellingAssetType = if (config.sellingAssetType.length > 0) Option(config.sellingAssetType) else None,
               sellingAssetCode = if (config.sellingAssetCode.length > 0) Option(config.sellingAssetCode) else None,

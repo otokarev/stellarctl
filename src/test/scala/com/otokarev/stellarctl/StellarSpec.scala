@@ -61,7 +61,7 @@ class StellarSpec extends FlatSpec with Matchers {
   }
 
   it should "Create an offer" in {
-    println(prettyRender(decompose(stellar.createOffer(
+    println(prettyRender(decompose(stellar.manageOffer(
       accountSecret = accountSecret1,
       sellingAssetCode = Option("BTC"),
       sellingAssetIssuer = Option(issuerAccount),

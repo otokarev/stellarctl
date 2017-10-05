@@ -1,5 +1,4 @@
 package com.otokarev.stellarctl
-import com.otokarev.stellarctl.Stellar._
 
 import org.stellar.sdk._
 import org.stellar.sdk.responses.{AccountResponse, OfferResponse, Page, SubmitTransactionResponse}
@@ -91,12 +90,13 @@ object SerializerImplicits {
         if (response.isSuccess) {
           result = result ~ ("ledger" -> response.getLedger.toString)
         } else {
-          val resultCodes: JObject = ("operationsResultCode" -> response.getExtras.getResultCodes.getOperationsResultCodes.asScala) ~
-            ("transactionResultCode" -> response.getExtras.getResultCodes.getTransactionResultCode)
+          var resultCodes: JObject = "transactionResultCode" -> response.getExtras.getResultCodes.getTransactionResultCode
+          if (response.getExtras.getResultCodes.getOperationsResultCodes != null) {
+            resultCodes = resultCodes ~ ("operationsResultCode" -> response.getExtras.getResultCodes.getOperationsResultCodes.asScala)
+          }
 
           result = result ~ ("envelopeXdr" -> response.getExtras.getEnvelopeXdr) ~
-            ("resultXdr" -> response.getExtras.getResultXdr) ~
-            ("resultCodes" -> resultCodes)
+            ("resultXdr" -> response.getExtras.getResultXdr) ~ ("resultCodes" -> resultCodes)
 
         }
 

@@ -17,7 +17,9 @@ object Main {
                      assetIssuer: String = "",
                      limit: String = "100",
                      destinationAccount: String = "",
+                     sourceAccount: String = "",
                      amount: String = "0.0",
+                     destinationAmount: String = "0.0",
                      startingBalance: String = "0.0",
                      memo: String = "",
                      memoType: String = "",
@@ -27,6 +29,9 @@ object Main {
                      buyingAssetType: String = "notNative",
                      buyingAssetCode: String = "",
                      buyingAssetIssuer: String = "",
+                     destinationAssetType: String = "notNative",
+                     destinationAssetCode: String = "",
+                     destinationAssetIssuer: String = "",
                      price: String = "",
                      cursor: String = "",
                      order: String = "asc",
@@ -57,7 +62,7 @@ object Main {
         .text("Create Test Stellar account")
         .children(
           opt[String]("account").required().abbr("p")
-            .action( (x, c) => c.copy(account = x) ).text("account ID (public key)"),
+            .action( (x, c) => c.copy(account = x) ).text("account ID (public key)")
         )
 
       cmd("create-account").action((_, c) => c.copy(command = "create-account"))
@@ -68,7 +73,7 @@ object Main {
           opt[String]("new-account-secret").required().abbr("ns")
             .action( (x, c) => c.copy(newAccountSecret = x) ).text("new account secret (private key)"),
           opt[String]("starting-balance").required().abbr("b")
-            .action( (x, c) => c.copy(startingBalance = x) ).text("startingBalance"),
+            .action( (x, c) => c.copy(startingBalance = x) ).text("startingBalance")
         )
 
       cmd("add-asset-to-trustline").action( (_, c) => c.copy(command = "add-asset-to-trustline") ).
@@ -149,13 +154,19 @@ object Main {
           opt[String]("offer-id").abbr("oi")
             .action( (x, c) => c.copy(offerId = x) ).text("offer ID"),
           checkConfig(c => {
-            if (c.command != "manage-offer")
-              success
-            else if (c.sellingAssetType != "native" && (c.sellingAssetIssuer.length == 0 || c.sellingAssetCode.length == 0))
-              failure("'--selling-asset-type' must be 'native' or both '--selling-asset-code' and '--selling-asset-issuer' must be specified")
-            else if (c.buyingAssetType != "native" && (c.buyingAssetIssuer.length == 0 || c.buyingAssetCode.length == 0))
-              failure("'--buying-asset-type' must be 'native' or both '--buying-asset-code' and '--buying-asset-issuer' must be specified")
-            else
+            if (c.command == "manage-offer") {
+              if (c.sellingAssetType != "native" && (c.sellingAssetIssuer.length == 0 || c.sellingAssetCode.length == 0))
+                failure("'--selling-asset-type' must be 'native' or both '--selling-asset-code' and '--selling-asset-issuer' must be specified")
+              else if (c.buyingAssetType != "native" && (c.buyingAssetIssuer.length == 0 || c.buyingAssetCode.length == 0))
+                failure("'--buying-asset-type' must be 'native' or both '--buying-asset-code' and '--buying-asset-issuer' must be specified")
+              else
+                success
+            } else if (c.command == "get-paths") {
+              if (c.destinationAssetType != "native" && (c.destinationAssetIssuer.length == 0 || c.destinationAssetCode.length == 0))
+                failure("'--destination-asset-type' must be 'native' or both '--destination-asset-code' and '--destination-asset-issuer' must be specified")
+              else
+                success
+            } else
               success
           })
         )
@@ -174,6 +185,24 @@ object Main {
             .action( (x, c) => c.copy(order = x) ).text("order (`asc` or `desc`)")
         )
 
+      cmd("get-paths")
+        .action( (_, c) => c.copy(command = "get-paths") ).
+        text("Get payment paths").
+        children(
+          opt[String]("source-account").required().abbr("sp")
+            .action( (x, c) => c.copy(sourceAccount = x) ).text("source account ID (public key)"),
+          opt[String]("destination-account").required().abbr("dp")
+            .action( (x, c) => c.copy(destinationAccount = x) ).text("destination account ID (public key)"),
+          opt[String]("destination-asset-type").abbr("dat")
+            .action( (x, c) => c.copy(destinationAssetType = x) ).text("destination asset type"),
+          opt[String]("destination-asset-code").required().abbr("dac")
+            .action( (x, c) => c.copy(destinationAssetCode = x) ).text("destination asset code"),
+          opt[String]("destination-asset-issuer").required().abbr("dai")
+            .action( (x, c) => c.copy(destinationAssetIssuer = x) ).text("destination asset issuer account ID"),
+          opt[String]("destination-amount").required().abbr("da")
+            .action( (x, c) => c.copy(destinationAmount = x) ).text("amount")
+        )
+
       checkConfig {c =>
         if (c.command.length == 0) failure("No command given") else success
       }
@@ -184,7 +213,7 @@ object Main {
         import net.liftweb.json.Extraction._
         import com.otokarev.stellarctl.SerializerImplicits._
 
-        implicit val context = new Context(if (config.config.length > 0) ConfigFactory.parseFile(new File(config.config)) else ConfigFactory.load())
+        implicit val context: Context = new Context(if (config.config.length > 0) ConfigFactory.parseFile(new File(config.config)) else ConfigFactory.load())
 
         val stellar = new Stellar()
 
@@ -215,7 +244,7 @@ object Main {
               assetIssuer = if (config.assetIssuer.length > 0) Option(config.assetIssuer) else None,
               amount = config.amount,
               memo = if (config.memo.length > 0) Option(config.memo) else None,
-              memoType = if (config.memoType.length > 0) Option(config.memoType) else None,
+              memoType = if (config.memoType.length > 0) Option(config.memoType) else None
             ))))
           case "manage-offer" =>
             println(prettyRender(decompose(stellar.manageOffer(
@@ -233,6 +262,18 @@ object Main {
           case "get-offers" =>
             println(prettyRender(decompose(stellar.getOffers(
               account = config.account,
+              cursor = if (config.cursor.length > 0) Option(config.cursor) else None,
+              limit = config.pageSize,
+              order = if (config.order == "desc") Stellar.Order.desc else Stellar.Order.asc
+            ))))
+          case "get-paths" =>
+            println(prettyRender(decompose(stellar.getPaths(
+              sourceAccount = config.sourceAccount,
+              destinationAccount = config.destinationAccount,
+              destinationAssetType = if (config.destinationAssetType.length > 0) Option(config.destinationAssetType) else None,
+              destinationAssetCode = if (config.destinationAssetCode.length > 0) Option(config.destinationAssetCode) else None,
+              destinationAssetIssuer = if (config.destinationAssetIssuer.length > 0) Option(config.destinationAssetIssuer) else None,
+              destinationAmount = config.destinationAmount,
               cursor = if (config.cursor.length > 0) Option(config.cursor) else None,
               limit = config.pageSize,
               order = if (config.order == "desc") Stellar.Order.desc else Stellar.Order.asc

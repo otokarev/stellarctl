@@ -1,7 +1,7 @@
 package com.otokarev.stellarctl
 
 import org.stellar.sdk._
-import org.stellar.sdk.responses.{AccountResponse, OfferResponse, Page, SubmitTransactionResponse}
+import org.stellar.sdk.responses._
 
 object SerializerImplicits {
   import net.liftweb.json._
@@ -52,7 +52,7 @@ object SerializerImplicits {
     }
   ))
 
-  implicit val formats: Formats = DefaultFormats + new AssetSerializer + new AccountResponseSerializer + new PageOfferResponseSerializer + new SubmitTransactionResponseSerializer + new GenerateKeyPairResultSerializer
+  implicit val formats: Formats = DefaultFormats + new AssetSerializer + new AccountResponseSerializer + new PageOfferResponseSerializer + new PagePathResponseSerializer + new SubmitTransactionResponseSerializer + new GenerateKeyPairResultSerializer
 
   class PageOfferResponseSerializer extends CustomSerializer[Page[OfferResponse]](format => (
     {
@@ -69,6 +69,32 @@ object SerializerImplicits {
             ("selling" -> decompose(record.getSelling)) ~
             ("price" -> record.getPrice) ~
             ("amount" -> record.getAmount)
+          result
+        })
+        records
+    }
+  ))
+
+  class PagePathResponseSerializer extends CustomSerializer[Page[PathResponse]](format => (
+    {
+      // We do not need deserialization so put here something for scala to compile
+      case _ => null.asInstanceOf[Page[PathResponse]]
+    },
+    {
+      case response: Page[PathResponse] =>
+        val records = response.getRecords.asScala.toList.map(record => {
+          var result = null.asInstanceOf[JObject]
+          record.getSourceAsset match {
+            case a: AssetTypeCreditAlphaNum => result = ("source_asset_type" -> a.getType) ~ ("source_asset_code" -> a.getCode) ~ ("source_asset_issuer" -> a.getIssuer.getAccountId)
+            case _: AssetTypeNative => result = "source_asset_type" -> "native"
+          }
+          result = result ~ ("source_amount" -> record.getSourceAmount)
+          record.getDestinationAsset match {
+            case a: AssetTypeCreditAlphaNum => result = result ~ ("destination_asset_type" -> a.getType) ~ ("destination_asset_code" -> a.getCode) ~ ("destination_asset_issuer" -> a.getIssuer.getAccountId)
+            case _: AssetTypeNative => result = result ~ ("destination_asset_type" -> "native")
+          }
+          result = result ~ ("destination_amount" -> record.getDestinationAmount) ~
+            ("path" -> decompose(record.getPath.asScala.toList))
           result
         })
         records

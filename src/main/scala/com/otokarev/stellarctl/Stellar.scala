@@ -5,7 +5,7 @@ import com.otokarev.stellarctl.Stellar.Order
 import scalaj.http._
 import org.stellar.sdk._
 import org.stellar.sdk.requests.RequestBuilder.{Order => SdkOrder}
-import org.stellar.sdk.responses.{AccountResponse, OfferResponse, Page, SubmitTransactionResponse}
+import org.stellar.sdk.responses._
 
 object Stellar {
   case class GenerateKeyPairResult(
@@ -15,8 +15,8 @@ object Stellar {
 
   object Order extends Enumeration {
     type Order = Value
-    val desc = Value("desc")
-    val asc = Value("asc")
+    val desc: Stellar.Order.Value = Value("desc")
+    val asc: Stellar.Order.Value = Value("asc")
   }
 }
 
@@ -186,6 +186,35 @@ class Stellar()(implicit context: Context) {
       case Order.desc => SdkOrder.DESC
       case _ => SdkOrder.ASC
     }).limit(limit).forAccount(KeyPair.fromAccountId(account))
+
+    cursor.foreach(builder.cursor)
+
+    builder.execute()
+  }
+
+  def getPaths(
+                 sourceAccount: String,
+                 destinationAccount: String,
+                 destinationAssetType: Option[String] = Some("notNative"),
+                 destinationAssetCode: Option[String] = None,
+                 destinationAssetIssuer: Option[String] = None,
+                 destinationAmount: String,
+                 cursor: Option[String] = None,
+                 limit: Int = 25,
+                 order: Order.Value = Order.asc
+               ): Page[PathResponse] = {
+    val builder = server.paths()
+    builder.sourceAccount(KeyPair.fromAccountId(sourceAccount))
+    builder.destinationAccount(KeyPair.fromAccountId(destinationAccount))
+    builder.destinationAmount(destinationAmount)
+    builder.destinationAsset(destinationAssetType map {
+      case "native" => new AssetTypeNative()
+      case _ => Asset.createNonNativeAsset(destinationAssetCode.get, KeyPair.fromAccountId(destinationAssetIssuer.get))
+    } get)
+    builder.order(order match {
+      case Order.desc => SdkOrder.DESC
+      case _ => SdkOrder.ASC
+    }).limit(limit)
 
     cursor.foreach(builder.cursor)
 

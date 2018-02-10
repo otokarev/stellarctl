@@ -2,9 +2,9 @@ Damn simple CLI application to communicate with [Stellar](https://www.stellar.or
 
 # Install
 
-Deb package: [stellarctl_0.1.0-3_all.deb](https://github.com/otokarev/stellarctl/releases/download/v0.1.0-3/stellarctl_0.1.0-3_all.deb)
+Deb package: [stellarctl_0.1.0-4_all.deb](https://github.com/otokarev/stellarctl/releases/download/v0.1.0-4/stellarctl_0.1.0-4_all.deb)
 
-Universal package: [stellarctl-0.1.0-3.zip](https://github.com/otokarev/stellarctl/releases/download/v0.1.0-3/stellarctl-0.1.0-3.zip)
+Universal package: [stellarctl-0.1.0-4.zip](https://github.com/otokarev/stellarctl/releases/download/v0.1.0-4/stellarctl-0.1.0-4.zip)
 
 # Usage
 ```
@@ -94,10 +94,10 @@ cd stellarctl
 
 sbt universal:packageBin
 ```
-now you got `target/universal/stellarctl-0.1.0-3.zip` that you can unpack and use
+now you got `target/universal/stellarctl-0.1.0-4.zip` that you can unpack and use
 ```
-unzip stellarctl-0.1.0-3.zip
-./stellarctl-0.1.0-3/bin/stellarctl --help
+unzip stellarctl-0.1.0-4.zip
+./stellarctl-0.1.0-4/bin/stellarctl --help
 ```
 
 ## Debian
@@ -106,5 +106,5 @@ git clone git@github.com:otokarev/stellarctl.git
 cd stellarctl
 
 sbt debian:packageBin
-sudo apt install stellarctl/target/stellarctl_0.1.0-3_all.deb
+sudo apt install stellarctl/target/stellarctl_0.1.0-4_all.deb
 ```

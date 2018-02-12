@@ -291,4 +291,28 @@ class Stellar()(implicit context: Context) {
       ))
     )
   }
+
+  def getOrderbook(
+                   sellingAssetType: Option[String] = Some("notNative"),
+                   sellingAssetCode: Option[String] = None,
+                   sellingAssetIssuer: Option[String] = None,
+                   buyingAssetType: Option[String] = Some("notNative"),
+                   buyingAssetCode: Option[String] = None,
+                   buyingAssetIssuer: Option[String] = None,
+                   cursor: Option[String] = None,
+                   limit: Int = 25,
+                   order: Order.Value = Order.asc
+                 ): OrderBookResponse = {
+    val builder = server.orderBook()
+    builder.sellingAsset(sellingAssetType map {
+      case "native" => new AssetTypeNative()
+      case _ => Asset.createNonNativeAsset(sellingAssetCode.get, KeyPair.fromAccountId(sellingAssetIssuer.get))
+    } get)
+    builder.buyingAsset(buyingAssetType map {
+      case "native" => new AssetTypeNative()
+      case _ => Asset.createNonNativeAsset(buyingAssetCode.get, KeyPair.fromAccountId(buyingAssetIssuer.get))
+    } get)
+
+    builder.execute()
+  }
 }

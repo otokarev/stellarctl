@@ -52,7 +52,17 @@ object SerializerImplicits {
     }
   ))
 
-  implicit val formats: Formats = DefaultFormats + new AssetSerializer + new AccountResponseSerializer + new PageOfferResponseSerializer + new PagePathResponseSerializer + new SubmitTransactionResponseSerializer + new GenerateKeyPairResultSerializer
+  implicit val formats: Formats =
+    DefaultFormats +
+      new PriceSerializer +
+      new AssetSerializer +
+      new AccountResponseSerializer +
+      new PageOfferResponseSerializer +
+      new PagePathResponseSerializer +
+      new SubmitTransactionResponseSerializer +
+      new GenerateKeyPairResultSerializer +
+      new OrderBookResponseRowSerializer +
+      new OrderBookResponseSerializer
 
   class PageOfferResponseSerializer extends CustomSerializer[Page[OfferResponse]](format => (
     {
@@ -98,6 +108,45 @@ object SerializerImplicits {
           result
         })
         records
+    }
+  ))
+
+  class PriceSerializer extends CustomSerializer[Price](format => (
+    {
+      // We do not need deserialization so put here something for scala to compile
+      case _ => null.asInstanceOf[Price]
+    },
+    {
+      case response: Price => (response.getNumerator.toFloat / response.getDenominator).toString
+    }
+  ))
+
+  class OrderBookResponseRowSerializer extends CustomSerializer[OrderBookResponse.Row](format => (
+    {
+      // We do not need deserialization so put here something for scala to compile
+      case _ => null.asInstanceOf[OrderBookResponse.Row]
+    },
+    {
+      case response: OrderBookResponse.Row =>
+        val result: JObject = ("amount" -> response.getAmount) ~
+          ("price" -> decompose(response.getPrice)) ~
+          ("price_r" -> decompose(response.getPriceR))
+        result
+    }
+  ))
+
+  class OrderBookResponseSerializer extends CustomSerializer[OrderBookResponse](format => (
+    {
+      // We do not need deserialization so put here something for scala to compile
+      case _ => null.asInstanceOf[OrderBookResponse]
+    },
+    {
+      case response: OrderBookResponse =>
+        val result: JObject = ("bids" -> decompose(response.getBids)) ~
+          ("asks" -> decompose(response.getAsks)) ~
+          ("base" -> decompose(response.getBase)) ~
+          ("counter" -> decompose(response.getCounter))
+        result
     }
   ))
 

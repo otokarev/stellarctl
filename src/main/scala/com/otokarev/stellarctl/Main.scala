@@ -154,19 +154,13 @@ object Main {
           opt[String]("offer-id").abbr("oi")
             .action( (x, c) => c.copy(offerId = x) ).text("offer ID"),
           checkConfig(c => {
-            if (c.command == "manage-offer") {
-              if (c.sellingAssetType != "native" && (c.sellingAssetIssuer.length == 0 || c.sellingAssetCode.length == 0))
-                failure("'--selling-asset-type' must be 'native' or both '--selling-asset-code' and '--selling-asset-issuer' must be specified")
-              else if (c.buyingAssetType != "native" && (c.buyingAssetIssuer.length == 0 || c.buyingAssetCode.length == 0))
-                failure("'--buying-asset-type' must be 'native' or both '--buying-asset-code' and '--buying-asset-issuer' must be specified")
-              else
-                success
-            } else if (c.command == "get-paths") {
-              if (c.destinationAssetType != "native" && (c.destinationAssetIssuer.length == 0 || c.destinationAssetCode.length == 0))
-                failure("'--destination-asset-type' must be 'native' or both '--destination-asset-code' and '--destination-asset-issuer' must be specified")
-              else
-                success
-            } else
+            if (c.command != "manage-offer")
+              success
+            else if (c.sellingAssetType != "native" && (c.sellingAssetIssuer.length == 0 || c.sellingAssetCode.length == 0))
+              failure("'--selling-asset-type' must be 'native' or both '--selling-asset-code' and '--selling-asset-issuer' must be specified")
+            else if (c.buyingAssetType != "native" && (c.buyingAssetIssuer.length == 0 || c.buyingAssetCode.length == 0))
+              failure("'--buying-asset-type' must be 'native' or both '--buying-asset-code' and '--buying-asset-issuer' must be specified")
+            else
               success
           })
         )
@@ -200,7 +194,49 @@ object Main {
           opt[String]("destination-asset-issuer").required().abbr("dai")
             .action( (x, c) => c.copy(destinationAssetIssuer = x) ).text("destination asset issuer account ID"),
           opt[String]("destination-amount").required().abbr("da")
-            .action( (x, c) => c.copy(destinationAmount = x) ).text("amount")
+            .action( (x, c) => c.copy(destinationAmount = x) ).text("amount"),
+          opt[String]("cursor").abbr("t")
+            .action( (x, c) => c.copy(cursor = x) ).text("cursor (paging token)"),
+          opt[Int]("limit").abbr("l")
+            .action( (x, c) => c.copy(pageSize = x) ).text("limit (page size)"),
+          opt[String]("order").abbr("o")
+            .action( (x, c) => c.copy(order = x) ).text("order (`asc` or `desc`)"),
+          checkConfig(c => {
+            if (c.command != "get-paths")
+              success
+            else if (c.destinationAssetType != "native" && (c.destinationAssetIssuer.length == 0 || c.destinationAssetCode.length == 0)) {
+              failure("'--destination-asset-type' must be 'native' or both '--destination-asset-code' and '--destination-asset-issuer' must be specified")
+            } else
+              success
+          })
+        )
+
+      cmd("get-orderbook")
+        .action( (_, c) => c.copy(command = "get-orderbook") ).
+        text("Get orderbook").
+        children(
+          opt[String]("selling-asset-type").abbr("sat")
+            .action( (x, c) => c.copy(sellingAssetType = x) ).text("selling asset type"),
+          opt[String]("selling-asset-code").abbr("sac")
+            .action( (x, c) => c.copy(sellingAssetCode = x) ).text("selling asset code"),
+          opt[String]("selling-asset-issuer").abbr("sai")
+            .action( (x, c) => c.copy(sellingAssetIssuer = x) ).text("selling asset issuer account ID"),
+          opt[String]("buying-asset-type").abbr("bat")
+            .action( (x, c) => c.copy(buyingAssetType = x) ).text("buying asset type"),
+          opt[String]("buying-asset-code").abbr("bac")
+            .action( (x, c) => c.copy(buyingAssetCode = x) ).text("buying asset code"),
+          opt[String]("buying-asset-issuer").abbr("bai")
+            .action( (x, c) => c.copy(buyingAssetIssuer = x) ).text("buying asset issuer account ID"),
+          checkConfig(c => {
+            if (c.command != "get-orderbook")
+              success
+            else if (c.sellingAssetType != "native" && (c.sellingAssetIssuer.length == 0 || c.sellingAssetCode.length == 0))
+              failure("'--selling-asset-type' must be 'native' or both '--selling-asset-code' and '--selling-asset-issuer' must be specified")
+            else if (c.buyingAssetType != "native" && (c.buyingAssetIssuer.length == 0 || c.buyingAssetCode.length == 0))
+              failure("'--buying-asset-type' must be 'native' or both '--buying-asset-code' and '--buying-asset-issuer' must be specified")
+            else
+              success
+          })
         )
 
       checkConfig {c =>
@@ -277,6 +313,15 @@ object Main {
               cursor = if (config.cursor.length > 0) Option(config.cursor) else None,
               limit = config.pageSize,
               order = if (config.order == "desc") Stellar.Order.desc else Stellar.Order.asc
+            ))))
+          case "get-orderbook" =>
+            println(prettyRender(decompose(stellar.getOrderbook(
+              sellingAssetType = if (config.sellingAssetType.length > 0) Option(config.sellingAssetType) else None,
+              sellingAssetCode = if (config.sellingAssetCode.length > 0) Option(config.sellingAssetCode) else None,
+              sellingAssetIssuer = if (config.sellingAssetIssuer.length > 0) Option(config.sellingAssetIssuer) else None,
+              buyingAssetType = if (config.buyingAssetType.length > 0) Option(config.buyingAssetType) else None,
+              buyingAssetCode = if (config.buyingAssetCode.length > 0) Option(config.buyingAssetCode) else None,
+              buyingAssetIssuer = if (config.buyingAssetIssuer.length > 0) Option(config.buyingAssetIssuer) else None
             ))))
         }
 

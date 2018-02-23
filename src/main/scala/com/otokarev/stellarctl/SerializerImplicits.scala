@@ -62,7 +62,9 @@ object SerializerImplicits {
       new SubmitTransactionResponseSerializer +
       new GenerateKeyPairResultSerializer +
       new OrderBookResponseRowSerializer +
-      new OrderBookResponseSerializer
+      new OrderBookResponseSerializer +
+      new SubmitTransactionExtrasSerializer +
+      new SubmitTransactionExtrasResultCodesSerializer
 
   class PageOfferResponseSerializer extends CustomSerializer[Page[OfferResponse]](format => (
     {
@@ -150,6 +152,34 @@ object SerializerImplicits {
     }
   ))
 
+  class SubmitTransactionExtrasResultCodesSerializer extends CustomSerializer[SubmitTransactionResponse.Extras.ResultCodes](format => (
+    {
+      // We do not need deserialization so put here something for scala to compile
+      case _ => null.asInstanceOf[SubmitTransactionResponse.Extras.ResultCodes]
+    },
+    {
+      case response: SubmitTransactionResponse.Extras.ResultCodes =>
+        var result = JObject()
+        Option(response.getTransactionResultCode).foreach(_ => result = result ~ ("transaction" -> response.getTransactionResultCode))
+        Option(response.getOperationsResultCodes).foreach(_ => result = result ~ ("operations" -> response.getOperationsResultCodes.asScala))
+        result
+    }
+  ))
+
+  class SubmitTransactionExtrasSerializer extends CustomSerializer[SubmitTransactionResponse.Extras](format => (
+    {
+      // We do not need deserialization so put here something for scala to compile
+      case _ => null.asInstanceOf[SubmitTransactionResponse.Extras]
+    },
+    {
+      case response: SubmitTransactionResponse.Extras =>
+        var result: JObject = "result_xdr" -> response.getResultXdr
+        result = result ~ ("envelope_xdr" -> response.getEnvelopeXdr)
+        result = result ~ ("result_codes" -> decompose(response.getResultCodes))
+        result
+    }
+  ))
+
   class SubmitTransactionResponseSerializer extends CustomSerializer[SubmitTransactionResponse](format => (
     {
       // We do not need deserialization so put here something for scala to compile
@@ -159,21 +189,10 @@ object SerializerImplicits {
       case response: SubmitTransactionResponse =>
         var result: JObject = ("isSuccess" -> response.isSuccess) ~
           ("hash" -> response.getHash) ~
+          ("ledger" -> Option(response.getLedger).map(_.longValue())) ~
           ("envelopeXdr" -> response.getEnvelopeXdr) ~
-          ("resultXdr" -> response.getResultXdr)
-
-        if (response.isSuccess) {
-          result = result ~ ("ledger" -> response.getLedger.toString)
-        } else {
-          var resultCodes: JObject = "transactionResultCode" -> response.getExtras.getResultCodes.getTransactionResultCode
-          if (response.getExtras.getResultCodes.getOperationsResultCodes != null) {
-            resultCodes = resultCodes ~ ("operationsResultCode" -> response.getExtras.getResultCodes.getOperationsResultCodes.asScala)
-          }
-
-          result = result ~ ("envelopeXdr" -> response.getExtras.getEnvelopeXdr) ~
-            ("resultXdr" -> response.getExtras.getResultXdr) ~ ("resultCodes" -> resultCodes)
-
-        }
+          ("resultXdr" -> response.getResultXdr) ~
+          ("extras" -> decompose(response.getExtras))
 
         result
     }

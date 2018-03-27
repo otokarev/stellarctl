@@ -54,62 +54,68 @@ object SerializerImplicits {
 
   implicit val formats: Formats =
     DefaultFormats +
-      new PriceSerializer +
-      new AssetSerializer +
       new AccountResponseSerializer +
-      new PageOfferResponseSerializer +
-      new PagePathResponseSerializer +
-      new SubmitTransactionResponseSerializer +
+      new AssetSerializer +
       new GenerateKeyPairResultSerializer +
+      new OfferResponseSerializer +
       new OrderBookResponseRowSerializer +
       new OrderBookResponseSerializer +
+      new PageSerializer[Any] +
+      new PathResponseSerializer +
+      new PriceSerializer +
+      new SubmitTransactionExtrasResultCodesSerializer +
       new SubmitTransactionExtrasSerializer +
-      new SubmitTransactionExtrasResultCodesSerializer
+      new SubmitTransactionResponseSerializer
 
-  class PageOfferResponseSerializer extends CustomSerializer[Page[OfferResponse]](format => (
+  class PageSerializer[T: Manifest] extends CustomSerializer[Page[T]] (format => (
     {
       // We do not need deserialization so put here something for scala to compile
-      case _ => null.asInstanceOf[Page[OfferResponse]]
+      case _ => null.asInstanceOf[Page[T]]
     },
     {
-      case response: Page[OfferResponse] =>
-        val records = response.getRecords.asScala.toList.map(record => {
-          val result = ("id" -> record.getId.toString) ~
-            ("seller" -> record.getSeller.getAccountId) ~
-            ("pagingToken" -> record.getPagingToken) ~
-            ("buying" -> decompose(record.getBuying)) ~
-            ("selling" -> decompose(record.getSelling)) ~
-            ("price" -> record.getPrice) ~
-            ("amount" -> record.getAmount)
-          result
-        })
+      case response: Page[T] =>
+        val records = response.getRecords.asScala.toList.map(decompose(_))
         records
     }
   ))
 
-  class PagePathResponseSerializer extends CustomSerializer[Page[PathResponse]](format => (
+  class OfferResponseSerializer extends CustomSerializer[OfferResponse](format => (
     {
       // We do not need deserialization so put here something for scala to compile
-      case _ => null.asInstanceOf[Page[PathResponse]]
+      case _ => null.asInstanceOf[OfferResponse]
     },
     {
-      case response: Page[PathResponse] =>
-        val records = response.getRecords.asScala.toList.map(record => {
-          var result = null.asInstanceOf[JObject]
-          record.getSourceAsset match {
-            case a: AssetTypeCreditAlphaNum => result = ("source_asset_type" -> a.getType) ~ ("source_asset_code" -> a.getCode) ~ ("source_asset_issuer" -> a.getIssuer.getAccountId)
-            case _: AssetTypeNative => result = "source_asset_type" -> "native"
-          }
-          result = result ~ ("source_amount" -> record.getSourceAmount)
-          record.getDestinationAsset match {
-            case a: AssetTypeCreditAlphaNum => result = result ~ ("destination_asset_type" -> a.getType) ~ ("destination_asset_code" -> a.getCode) ~ ("destination_asset_issuer" -> a.getIssuer.getAccountId)
-            case _: AssetTypeNative => result = result ~ ("destination_asset_type" -> "native")
-          }
-          result = result ~ ("destination_amount" -> record.getDestinationAmount) ~
-            ("path" -> decompose(record.getPath.asScala.toList))
-          result
-        })
-        records
+      case response: OfferResponse => ("id" -> response.getId.toString) ~
+            ("seller" -> response.getSeller.getAccountId) ~
+            ("pagingToken" -> response.getPagingToken) ~
+            ("buying" -> decompose(response.getBuying)) ~
+            ("selling" -> decompose(response.getSelling)) ~
+            ("price" -> response.getPrice) ~
+            ("amount" -> response.getAmount)
+    }
+  ))
+
+  class PathResponseSerializer extends CustomSerializer[PathResponse](format => (
+    {
+      // We do not need deserialization so put here something for scala to compile
+      case _ => null.asInstanceOf[PathResponse]
+    },
+    {
+      case response: PathResponse => {
+        var result = null.asInstanceOf[JObject]
+        response.getSourceAsset match {
+          case a: AssetTypeCreditAlphaNum => result = ("source_asset_type" -> a.getType) ~ ("source_asset_code" -> a.getCode) ~ ("source_asset_issuer" -> a.getIssuer.getAccountId)
+          case _: AssetTypeNative => result = "source_asset_type" -> "native"
+        }
+        result = result ~ ("source_amount" -> response.getSourceAmount)
+        response.getDestinationAsset match {
+          case a: AssetTypeCreditAlphaNum => result = result ~ ("destination_asset_type" -> a.getType) ~ ("destination_asset_code" -> a.getCode) ~ ("destination_asset_issuer" -> a.getIssuer.getAccountId)
+          case _: AssetTypeNative => result = result ~ ("destination_asset_type" -> "native")
+        }
+        result = result ~ ("destination_amount" -> response.getDestinationAmount) ~
+          ("path" -> decompose(response.getPath.asScala.toList))
+        result
+      }
     }
   ))
 
